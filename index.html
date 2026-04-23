@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capítulo 2 — Simulador de decisiones de integración</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #111a35;
+      --text: #edf2ff;
+      --muted: #b5c0df;
+      --line: rgba(154, 178, 235, 0.32);
+      --accent: #63b0ff;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at 10% 10%, #16244f 0%, #070b18 55%, #04070f 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container { width: min(1100px, 92vw); margin: 2rem auto 3rem; }
+    .hero, .card {
+      background: rgba(17, 26, 53, 0.87);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1rem 1.1rem;
+    }
+    .hero { margin-bottom: 1rem; }
+    .badge {
+      display: inline-block;
+      padding: .2rem .65rem;
+      border-radius: 999px;
+      font-size: .82rem;
+      background: rgba(99, 176, 255, .15);
+      border: 1px solid rgba(99, 176, 255, .35);
+      color: #cbe4ff;
+      margin-bottom: .7rem;
+    }
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 .7rem; }
+    h1 { font-size: clamp(1.45rem, 2.7vw, 2.2rem); }
+    h2 { font-size: clamp(1.1rem, 2vw, 1.55rem); }
+    p { margin: 0 0 .85rem; color: var(--muted); }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    ul { margin: .3rem 0 0; padding-left: 1rem; color: var(--muted); }
+    li { margin: .45rem 0; }
+
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 1rem;
+    }
+    .question {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: .7rem;
+      margin-bottom: .7rem;
+      background: rgba(2, 8, 22, .35);
+    }
+    .question h3 { margin-bottom: .45rem; font-size: 1rem; color: #dce7ff; }
+    .options { display: grid; gap: .45rem; }
+    .opt {
+      text-align: left;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      background: #101a37;
+      color: #dce7ff;
+      padding: .55rem .6rem;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .opt:hover { border-color: rgba(99,176,255,.75); }
+    .opt.active {
+      border-color: rgba(52,211,153,.85);
+      background: rgba(52, 211, 153, .14);
+    }
+    .result {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      padding: .85rem;
+      background: rgba(6, 11, 28, .45);
+    }
+    .score {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: .2rem 0;
+      letter-spacing: .4px;
+    }
+    .pill {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .82rem;
+      border: 1px solid rgba(255,255,255,.2);
+      margin-bottom: .55rem;
+    }
+    .bars { margin-top: .6rem; display: grid; gap: .45rem; }
+    .bar-wrap { font-size: .85rem; color: #c5d2f4; }
+    .track {
+      margin-top: .2rem;
+      height: 10px;
+      border-radius: 999px;
+      background: #1a2550;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .fill { height: 100%; width: 0%; transition: width .2s ease; }
+    .tx { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+    .spec { background: linear-gradient(90deg, #34d399, #10b981); }
+    .coord { background: linear-gradient(90deg, #f59e0b, #f97316); }
+
+    @media (max-width: 900px) {
+      .sim-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <span class="badge">Proyecto web · Capítulo 2</span>
+      <h1>Naturaleza y ámbito de la empresa: versión interactiva tipo simulador</h1>
+      <p>
+        Esta versión cambia la interacción: en vez de sliders, ahora tienes un <strong>simulador por decisiones</strong>.
+        Seleccionas condiciones de una industria y el sistema recomienda el nivel de integración vertical con
+        fundamentos de costos de transacción y coordinación.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>1) Dimensión teórica</h2>
+        <ul>
+          <li>La empresa reemplaza al mercado cuando contratar externamente es costoso o riesgoso.</li>
+          <li>La integración vertical aumenta su valor con activos específicos, incertidumbre y riesgo de oportunismo.</li>
+          <li>El límite eficiente aparece cuando los costos internos de coordinación crecen demasiado.</li>
+          <li>La gobernanza (propiedad, contratos e incentivos) reduce conflictos de agencia y mejora desempeño.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>2) Aplicación práctica: agroindustria alimentaria</h2>
+        <ul>
+          <li><strong>Abastecimiento perecible:</strong> mayor riesgo de quiebre logístico favorece integrar etapas críticas.</li>
+          <li><strong>Procesamiento estandarizado:</strong> puede tercerizarse si hay proveedores competitivos y trazabilidad.</li>
+          <li><strong>Calidad y reputación:</strong> cuando la marca depende de control fino, la integración suele aumentar.</li>
+          <li><strong>Gobernanza clave:</strong> trazabilidad, regulación sanitaria, poder de proveedores y estabilidad de demanda.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:1rem;">
+      <h2>3) Interactividad nueva: simulador de decisiones estratégicas</h2>
+      <p>Marca una opción por pregunta y observa el diagnóstico automáticamente.</p>
+
+      <div class="sim-layout">
+        <div>
+          <div class="question" data-q="tx">
+            <h3>A) ¿Cómo son los costos de usar mercado (negociación/monitoreo)?</h3>
+            <div class="options">
+              <button class="opt" data-value="20">Bajos y contratos simples</button>
+              <button class="opt" data-value="55">Medios, con fricciones ocasionales</button>
+              <button class="opt" data-value="85">Altos, alta complejidad contractual</button>
+            </div>
+          </div>
+
+          <div class="question" data-q="spec">
+            <h3>B) ¿Qué tan específicos son los activos?</h3>
+            <div class="options">
+              <button class="opt" data-value="20">Genéricos (fácil reemplazo)</button>
+              <button class="opt" data-value="60">Mixtos (adaptaciones moderadas)</button>
+              <button class="opt" data-value="90">Muy específicos (alto riesgo de hold-up)</button>
+            </div>
+          </div>
+
+          <div class="question" data-q="coord">
+            <h3>C) ¿Qué tan costoso es coordinar internamente?</h3>
+            <div class="options">
+              <button class="opt" data-value="25">Bajo: procesos maduros</button>
+              <button class="opt" data-value="55">Medio: complejidad controlable</button>
+              <button class="opt" data-value="85">Alto: burocracia y rigidez</button>
+            </div>
+          </div>
+
+          <div class="question" data-q="unc">
+            <h3>D) ¿Cuál es el nivel de incertidumbre (demanda/regulación)?</h3>
+            <div class="options">
+              <button class="opt" data-value="25">Bajo y predecible</button>
+              <button class="opt" data-value="55">Moderado</button>
+              <button class="opt" data-value="80">Alto y cambiante</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="result">
+          <span class="pill" id="pill">Diagnóstico pendiente</span>
+          <div class="score" id="score">--%</div>
+          <p id="message">Selecciona una opción en cada bloque para obtener la recomendación.</p>
+
+          <div class="bars">
+            <div class="bar-wrap">Presión a integrar (costos de mercado)
+              <div class="track"><div class="fill tx" id="bTx"></div></div>
+            </div>
+            <div class="bar-wrap">Presión a integrar (especificidad)
+              <div class="track"><div class="fill spec" id="bSpec"></div></div>
+            </div>
+            <div class="bar-wrap">Presión a desintegrar (coordinación interna)
+              <div class="track"><div class="fill coord" id="bCoord"></div></div>
+            </div>
+          </div>
+
+          <p style="margin-top:.75rem;color:#d2def9" id="gov"></p>
+        </div>
+      </div>
+    </section>
+
+    <p style="margin-top:1rem;color:#9db0de;font-size:.9rem;">
+      Base conceptual: <em>Organización Industrial para la Estrategia Empresarial</em>, capítulo 2 (Tarziján & Paredes, 2da edición).
+      Referencia proporcionada por el usuario:
+      <a href="https://elvisjgblog.wordpress.com/wp-content/uploads/2018/02/organizacion-industrial-para-la-estrategia-empresarial-jorge-tarzijan-pearson-2da-edicion-140109191519-phpapp02.pdf" target="_blank" rel="noopener noreferrer">PDF</a>.
+    </p>
+  </main>
+
+  <script>
+    const answers = { tx: null, spec: null, coord: null, unc: null };
+    const scoreEl = document.getElementById('score');
+    const messageEl = document.getElementById('message');
+    const pillEl = document.getElementById('pill');
+    const govEl = document.getElementById('gov');
+    const bTx = document.getElementById('bTx');
+    const bSpec = document.getElementById('bSpec');
+    const bCoord = document.getElementById('bCoord');
+
+    document.querySelectorAll('.question').forEach(question => {
+      const qKey = question.dataset.q;
+      const options = question.querySelectorAll('.opt');
+
+      options.forEach(btn => {
+        btn.addEventListener('click', () => {
+          options.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          answers[qKey] = Number(btn.dataset.value);
+          evaluate();
+        });
+      });
+    });
+
+    function evaluate() {
+      const ready = Object.values(answers).every(v => v !== null);
+      if (!ready) {
+        return;
+      }
+
+      const tx = answers.tx;
+      const spec = answers.spec;
+      const coord = answers.coord;
+      const unc = answers.unc;
+
+      // Nuevo enfoque: índice por escenario de decisión.
+      const integratePressure = (0.35 * tx) + (0.35 * spec) + (0.20 * unc);
+      const disintegratePressure = (0.30 * coord);
+      const score = Math.max(0, Math.min(100, Math.round(integratePressure - disintegratePressure + 20)));
+
+      bTx.style.width = `${tx}%`;
+      bSpec.style.width = `${spec}%`;
+      bCoord.style.width = `${coord}%`;
+      scoreEl.textContent = `${score}%`;
+
+      if (score >= 70) {
+        pillEl.textContent = 'Integración recomendada: Alta';
+        pillEl.style.borderColor = 'rgba(52,211,153,.75)';
+        pillEl.style.color = '#b9f4df';
+        messageEl.textContent = 'Conviene internalizar etapas críticas para proteger inversiones específicas y reducir riesgo contractual.';
+        govEl.textContent = 'Gobernanza sugerida: propiedad directa en eslabones críticos + incentivos por desempeño operativo.';
+      } else if (score >= 45) {
+        pillEl.textContent = 'Integración recomendada: Media';
+        pillEl.style.borderColor = 'rgba(251,191,36,.8)';
+        pillEl.style.color = '#ffe8ad';
+        messageEl.textContent = 'Estrategia híbrida: integración selectiva y contratos de largo plazo con proveedores clave.';
+        govEl.textContent = 'Gobernanza sugerida: alianzas estratégicas, cláusulas de calidad y mecanismos de resolución de disputas.';
+      } else {
+        pillEl.textContent = 'Integración recomendada: Baja';
+        pillEl.style.borderColor = 'rgba(251,113,133,.8)';
+        pillEl.style.color = '#ffd0d8';
+        messageEl.textContent = 'El mercado puede coordinar eficientemente; prioriza flexibilidad y especialización de proveedores.';
+        govEl.textContent = 'Gobernanza sugerida: contratos estandarizados, múltiples proveedores y auditoría de cumplimiento.';
+      }
+    }
+  </script>
+</body>
+</html>
