@@ -3,296 +3,381 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Capítulo 2 — Simulador de decisiones de integración</title>
+  <title>Capítulo 2 — Quiz animado de integración vertical</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --card: #111a35;
-      --text: #edf2ff;
-      --muted: #b5c0df;
-      --line: rgba(154, 178, 235, 0.32);
-      --accent: #63b0ff;
+      --bg-1: #090f24;
+      --bg-2: #111a3d;
+      --card: rgba(20, 30, 65, 0.78);
+      --line: rgba(164, 186, 245, 0.25);
+      --text: #edf3ff;
+      --muted: #afbedf;
+      --accent: #6cb6ff;
       --ok: #34d399;
       --warn: #fbbf24;
-      --danger: #fb7185;
+      --bad: #fb7185;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at 10% 10%, #16244f 0%, #070b18 55%, #04070f 100%);
+      min-height: 100vh;
       color: var(--text);
-      line-height: 1.5;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, #1a2b64 0%, transparent 35%),
+        radial-gradient(circle at 90% 20%, #263b8f 0%, transparent 40%),
+        linear-gradient(150deg, var(--bg-1), var(--bg-2));
+      overflow-x: hidden;
     }
-    .container { width: min(1100px, 92vw); margin: 2rem auto 3rem; }
-    .hero, .card {
-      background: rgba(17, 26, 53, 0.87);
+    .blob {
+      position: fixed;
+      width: 280px;
+      height: 280px;
+      border-radius: 999px;
+      filter: blur(45px);
+      opacity: .25;
+      pointer-events: none;
+      animation: float 9s ease-in-out infinite;
+      z-index: 0;
+    }
+    .b1 { background: #4f8cff; top: -60px; left: -30px; }
+    .b2 { background: #2ed1a2; bottom: -80px; right: -30px; animation-delay: 1.6s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-18px); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: min(1080px, 92vw);
+      margin: 1.5rem auto 2.8rem;
+    }
+    .panel {
+      background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 1rem 1.1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
+      backdrop-filter: blur(6px);
+      animation: rise .55s ease both;
     }
-    .hero { margin-bottom: 1rem; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .badge {
       display: inline-block;
-      padding: .2rem .65rem;
-      border-radius: 999px;
       font-size: .82rem;
-      background: rgba(99, 176, 255, .15);
-      border: 1px solid rgba(99, 176, 255, .35);
-      color: #cbe4ff;
-      margin-bottom: .7rem;
+      border: 1px solid rgba(108,182,255,.5);
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      color: #cde5ff;
+      background: rgba(108,182,255,.15);
+      margin-bottom: .6rem;
     }
-    h1, h2, h3 { line-height: 1.2; margin: 0 0 .7rem; }
+    h1, h2, h3 { margin: 0 0 .7rem; line-height: 1.2; }
     h1 { font-size: clamp(1.45rem, 2.7vw, 2.2rem); }
-    h2 { font-size: clamp(1.1rem, 2vw, 1.55rem); }
-    p { margin: 0 0 .85rem; color: var(--muted); }
+    h2 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+    p { color: var(--muted); margin: 0 0 .8rem; }
+    ul { margin: .2rem 0 0; padding-left: 1rem; color: var(--muted); }
+    li { margin: .42rem 0; }
+
     .grid {
+      margin-top: 1rem;
       display: grid;
       gap: 1rem;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
-    ul { margin: .3rem 0 0; padding-left: 1rem; color: var(--muted); }
-    li { margin: .45rem 0; }
 
-    .sim-layout {
+    .quiz-wrap {
+      margin-top: 1rem;
       display: grid;
       grid-template-columns: 1.1fr .9fr;
       gap: 1rem;
     }
-    .question {
-      border: 1px solid rgba(255,255,255,.12);
+    .q {
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(5, 10, 28, .45);
       border-radius: 12px;
       padding: .7rem;
       margin-bottom: .7rem;
-      background: rgba(2, 8, 22, .35);
+      transition: transform .15s ease, border-color .2s ease;
     }
-    .question h3 { margin-bottom: .45rem; font-size: 1rem; color: #dce7ff; }
-    .options { display: grid; gap: .45rem; }
+    .q:hover { transform: translateY(-2px); border-color: rgba(108,182,255,.55); }
+    .opts { display: grid; gap: .42rem; }
     .opt {
-      text-align: left;
-      width: 100%;
-      border: 1px solid rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.15);
       border-radius: 10px;
-      background: #101a37;
-      color: #dce7ff;
-      padding: .55rem .6rem;
+      background: #12204a;
+      color: #d9e5ff;
+      text-align: left;
+      padding: .53rem .6rem;
       cursor: pointer;
-      transition: .15s ease;
+      transition: all .2s ease;
     }
-    .opt:hover { border-color: rgba(99,176,255,.75); }
+    .opt:hover { border-color: rgba(108,182,255,.75); }
     .opt.active {
-      border-color: rgba(52,211,153,.85);
-      background: rgba(52, 211, 153, .14);
+      background: linear-gradient(90deg, rgba(46,209,162,.26), rgba(108,182,255,.2));
+      border-color: rgba(46,209,162,.85);
+      box-shadow: 0 0 0 2px rgba(46,209,162,.18);
     }
+
     .result {
       border: 1px solid rgba(255,255,255,.14);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: .85rem;
-      background: rgba(6, 11, 28, .45);
+      background: rgba(4, 8, 22, .45);
+      position: sticky;
+      top: 10px;
+      height: fit-content;
     }
     .score {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 800;
-      margin: .2rem 0;
-      letter-spacing: .4px;
+      line-height: 1;
+      margin: .3rem 0;
+      letter-spacing: .2px;
+      transition: transform .25s ease;
     }
-    .pill {
+    .pulse { animation: pulse .45s ease; }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .tag {
       display: inline-block;
-      padding: .2rem .6rem;
-      border-radius: 999px;
-      font-size: .82rem;
       border: 1px solid rgba(255,255,255,.2);
-      margin-bottom: .55rem;
-    }
-    .bars { margin-top: .6rem; display: grid; gap: .45rem; }
-    .bar-wrap { font-size: .85rem; color: #c5d2f4; }
-    .track {
-      margin-top: .2rem;
-      height: 10px;
       border-radius: 999px;
-      background: #1a2550;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,.12);
+      padding: .2rem .6rem;
+      font-size: .82rem;
+      margin-bottom: .45rem;
     }
-    .fill { height: 100%; width: 0%; transition: width .2s ease; }
-    .tx { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
-    .spec { background: linear-gradient(90deg, #34d399, #10b981); }
-    .coord { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .track {
+      height: 10px;
+      background: #1a2755;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: .2rem;
+    }
+    .fill { height: 100%; width: 0%; transition: width .35s ease; }
+    .f-int { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+    .f-spe { background: linear-gradient(90deg, #34d399, #10b981); }
+    .f-des { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .legend { color: #c5d5fa; font-size: .85rem; margin-top: .55rem; }
 
-    @media (max-width: 900px) {
-      .sim-layout { grid-template-columns: 1fr; }
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      opacity: 0;
+      pointer-events: none;
+      animation: confetti 900ms ease-out forwards;
+    }
+    @keyframes confetti {
+      0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+      100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(320deg); }
+    }
+
+    @media (max-width: 940px) {
+      .quiz-wrap { grid-template-columns: 1fr; }
+      .result { position: static; }
     }
   </style>
 </head>
 <body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+
   <main class="container">
-    <section class="hero">
-      <span class="badge">Proyecto web · Capítulo 2</span>
-      <h1>Naturaleza y ámbito de la empresa: versión interactiva tipo simulador</h1>
+    <section class="panel">
+      <span class="badge">Capítulo 2 · versión animada</span>
+      <h1>Quiz estratégico: ¿integrar o usar mercado?</h1>
       <p>
-        Esta versión cambia la interacción: en vez de sliders, ahora tienes un <strong>simulador por decisiones</strong>.
-        Seleccionas condiciones de una industria y el sistema recomienda el nivel de integración vertical con
-        fundamentos de costos de transacción y coordinación.
+        Aquí tienes una versión más animada y dinámica: eliges escenarios y el sistema te entrega una
+        recomendación de integración vertical con base en costos de transacción, coordinación y gobernanza.
       </p>
     </section>
 
     <section class="grid">
-      <article class="card">
-        <h2>1) Dimensión teórica</h2>
+      <article class="panel">
+        <h2>Dimensión teórica</h2>
         <ul>
-          <li>La empresa reemplaza al mercado cuando contratar externamente es costoso o riesgoso.</li>
-          <li>La integración vertical aumenta su valor con activos específicos, incertidumbre y riesgo de oportunismo.</li>
-          <li>El límite eficiente aparece cuando los costos internos de coordinación crecen demasiado.</li>
-          <li>La gobernanza (propiedad, contratos e incentivos) reduce conflictos de agencia y mejora desempeño.</li>
+          <li>La empresa sustituye al mercado cuando transar externamente es caro o inseguro.</li>
+          <li>La especificidad de activos y el oportunismo aumentan la conveniencia de integrar.</li>
+          <li>Si la coordinación interna se vuelve muy costosa, conviene desintegrar o hibridar.</li>
+          <li>La gobernanza adecuada alinea incentivos y reduce conflictos de agencia.</li>
         </ul>
       </article>
 
-      <article class="card">
-        <h2>2) Aplicación práctica: agroindustria alimentaria</h2>
+      <article class="panel">
+        <h2>Aplicación práctica: retail omnicanal</h2>
         <ul>
-          <li><strong>Abastecimiento perecible:</strong> mayor riesgo de quiebre logístico favorece integrar etapas críticas.</li>
-          <li><strong>Procesamiento estandarizado:</strong> puede tercerizarse si hay proveedores competitivos y trazabilidad.</li>
-          <li><strong>Calidad y reputación:</strong> cuando la marca depende de control fino, la integración suele aumentar.</li>
-          <li><strong>Gobernanza clave:</strong> trazabilidad, regulación sanitaria, poder de proveedores y estabilidad de demanda.</li>
+          <li><strong>Última milla:</strong> integrar cuando la promesa de entrega define la marca.</li>
+          <li><strong>Warehousing estándar:</strong> subcontratar cuando hay escala y SLA confiables.</li>
+          <li><strong>Datos y personalización:</strong> mayor integración cuando el algoritmo es fuente de ventaja.</li>
+          <li><strong>Gobernanza:</strong> SLAs, incentivos por nivel de servicio y contratos contingentes.</li>
         </ul>
       </article>
     </section>
 
-    <section class="card" style="margin-top:1rem;">
-      <h2>3) Interactividad nueva: simulador de decisiones estratégicas</h2>
-      <p>Marca una opción por pregunta y observa el diagnóstico automáticamente.</p>
+    <section class="panel" style="margin-top:1rem;">
+      <h2>Interacción nueva: quiz animado por escenarios</h2>
+      <p>Selecciona una opción por bloque. El resultado se actualiza con animaciones y diagnóstico inmediato.</p>
 
-      <div class="sim-layout">
+      <div class="quiz-wrap">
         <div>
-          <div class="question" data-q="tx">
-            <h3>A) ¿Cómo son los costos de usar mercado (negociación/monitoreo)?</h3>
-            <div class="options">
-              <button class="opt" data-value="20">Bajos y contratos simples</button>
-              <button class="opt" data-value="55">Medios, con fricciones ocasionales</button>
-              <button class="opt" data-value="85">Altos, alta complejidad contractual</button>
+          <div class="q" data-q="tx">
+            <h3>A) Costos de transacción en mercado</h3>
+            <div class="opts">
+              <button class="opt" data-value="20">Bajos</button>
+              <button class="opt" data-value="55">Medios</button>
+              <button class="opt" data-value="85">Altos</button>
             </div>
           </div>
 
-          <div class="question" data-q="spec">
-            <h3>B) ¿Qué tan específicos son los activos?</h3>
-            <div class="options">
-              <button class="opt" data-value="20">Genéricos (fácil reemplazo)</button>
-              <button class="opt" data-value="60">Mixtos (adaptaciones moderadas)</button>
-              <button class="opt" data-value="90">Muy específicos (alto riesgo de hold-up)</button>
+          <div class="q" data-q="spec">
+            <h3>B) Especificidad de activos</h3>
+            <div class="opts">
+              <button class="opt" data-value="20">Genéricos</button>
+              <button class="opt" data-value="60">Mixtos</button>
+              <button class="opt" data-value="90">Altamente específicos</button>
             </div>
           </div>
 
-          <div class="question" data-q="coord">
-            <h3>C) ¿Qué tan costoso es coordinar internamente?</h3>
-            <div class="options">
-              <button class="opt" data-value="25">Bajo: procesos maduros</button>
-              <button class="opt" data-value="55">Medio: complejidad controlable</button>
-              <button class="opt" data-value="85">Alto: burocracia y rigidez</button>
+          <div class="q" data-q="coord">
+            <h3>C) Costos de coordinación interna</h3>
+            <div class="opts">
+              <button class="opt" data-value="25">Bajos</button>
+              <button class="opt" data-value="55">Medios</button>
+              <button class="opt" data-value="85">Altos</button>
             </div>
           </div>
 
-          <div class="question" data-q="unc">
-            <h3>D) ¿Cuál es el nivel de incertidumbre (demanda/regulación)?</h3>
-            <div class="options">
-              <button class="opt" data-value="25">Bajo y predecible</button>
-              <button class="opt" data-value="55">Moderado</button>
-              <button class="opt" data-value="80">Alto y cambiante</button>
+          <div class="q" data-q="unc">
+            <h3>D) Incertidumbre externa</h3>
+            <div class="opts">
+              <button class="opt" data-value="25">Baja</button>
+              <button class="opt" data-value="55">Media</button>
+              <button class="opt" data-value="80">Alta</button>
             </div>
           </div>
         </div>
 
-        <div class="result">
-          <span class="pill" id="pill">Diagnóstico pendiente</span>
+        <aside class="result" id="resultBox">
+          <span class="tag" id="tag">Diagnóstico pendiente</span>
           <div class="score" id="score">--%</div>
-          <p id="message">Selecciona una opción en cada bloque para obtener la recomendación.</p>
+          <p id="msg">Responde todas las preguntas para activar la recomendación.</p>
 
-          <div class="bars">
-            <div class="bar-wrap">Presión a integrar (costos de mercado)
-              <div class="track"><div class="fill tx" id="bTx"></div></div>
-            </div>
-            <div class="bar-wrap">Presión a integrar (especificidad)
-              <div class="track"><div class="fill spec" id="bSpec"></div></div>
-            </div>
-            <div class="bar-wrap">Presión a desintegrar (coordinación interna)
-              <div class="track"><div class="fill coord" id="bCoord"></div></div>
-            </div>
-          </div>
+          <div class="legend">Presión a integrar (mercado)</div>
+          <div class="track"><div class="fill f-int" id="barTx"></div></div>
 
-          <p style="margin-top:.75rem;color:#d2def9" id="gov"></p>
-        </div>
+          <div class="legend">Presión a integrar (especificidad)</div>
+          <div class="track"><div class="fill f-spe" id="barSpec"></div></div>
+
+          <div class="legend">Presión a desintegrar (coordinación)</div>
+          <div class="track"><div class="fill f-des" id="barCoord"></div></div>
+
+          <p style="margin-top:.7rem; color:#d4e0fb;" id="gov"></p>
+        </aside>
       </div>
     </section>
 
     <p style="margin-top:1rem;color:#9db0de;font-size:.9rem;">
-      Base conceptual: <em>Organización Industrial para la Estrategia Empresarial</em>, capítulo 2 (Tarziján & Paredes, 2da edición).
-      Referencia proporcionada por el usuario:
-      <a href="https://elvisjgblog.wordpress.com/wp-content/uploads/2018/02/organizacion-industrial-para-la-estrategia-empresarial-jorge-tarzijan-pearson-2da-edicion-140109191519-phpapp02.pdf" target="_blank" rel="noopener noreferrer">PDF</a>.
+      Base conceptual: <em>Organización Industrial para la Estrategia Empresarial</em>, capítulo 2.
+      PDF de referencia compartido por el usuario:
+      <a href="https://elvisjgblog.wordpress.com/wp-content/uploads/2018/02/organizacion-industrial-para-la-estrategia-empresarial-jorge-tarzijan-pearson-2da-edicion-140109191519-phpapp02.pdf" target="_blank" rel="noopener noreferrer">enlace</a>.
     </p>
   </main>
 
   <script>
     const answers = { tx: null, spec: null, coord: null, unc: null };
-    const scoreEl = document.getElementById('score');
-    const messageEl = document.getElementById('message');
-    const pillEl = document.getElementById('pill');
-    const govEl = document.getElementById('gov');
-    const bTx = document.getElementById('bTx');
-    const bSpec = document.getElementById('bSpec');
-    const bCoord = document.getElementById('bCoord');
 
-    document.querySelectorAll('.question').forEach(question => {
-      const qKey = question.dataset.q;
-      const options = question.querySelectorAll('.opt');
+    const score = document.getElementById('score');
+    const tag = document.getElementById('tag');
+    const msg = document.getElementById('msg');
+    const gov = document.getElementById('gov');
+    const resultBox = document.getElementById('resultBox');
+    const barTx = document.getElementById('barTx');
+    const barSpec = document.getElementById('barSpec');
+    const barCoord = document.getElementById('barCoord');
 
-      options.forEach(btn => {
-        btn.addEventListener('click', () => {
-          options.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          answers[qKey] = Number(btn.dataset.value);
+    document.querySelectorAll('.q').forEach(block => {
+      const qKey = block.dataset.q;
+      const options = block.querySelectorAll('.opt');
+
+      options.forEach(opt => {
+        opt.addEventListener('click', () => {
+          options.forEach(o => o.classList.remove('active'));
+          opt.classList.add('active');
+          answers[qKey] = Number(opt.dataset.value);
           evaluate();
         });
       });
     });
 
-    function evaluate() {
-      const ready = Object.values(answers).every(v => v !== null);
-      if (!ready) {
-        return;
+    function animateScore() {
+      score.classList.remove('pulse');
+      void score.offsetWidth;
+      score.classList.add('pulse');
+    }
+
+    function popConfetti() {
+      for (let i = 0; i < 12; i++) {
+        const c = document.createElement('span');
+        c.className = 'confetti';
+        c.style.left = `${Math.random() * 92 + 4}%`;
+        c.style.top = '18px';
+        c.style.background = ['#60a5fa', '#34d399', '#fbbf24', '#fb7185'][i % 4];
+        c.style.setProperty('--x', `${(Math.random() - 0.5) * 160}px`);
+        c.style.setProperty('--y', `${Math.random() * 120 + 60}px`);
+        resultBox.appendChild(c);
+        setTimeout(() => c.remove(), 900);
       }
+    }
+
+    function evaluate() {
+      if (!Object.values(answers).every(v => v !== null)) return;
 
       const tx = answers.tx;
       const spec = answers.spec;
       const coord = answers.coord;
       const unc = answers.unc;
 
-      // Nuevo enfoque: índice por escenario de decisión.
-      const integratePressure = (0.35 * tx) + (0.35 * spec) + (0.20 * unc);
-      const disintegratePressure = (0.30 * coord);
-      const score = Math.max(0, Math.min(100, Math.round(integratePressure - disintegratePressure + 20)));
+      const integrate = (0.36 * tx) + (0.34 * spec) + (0.20 * unc);
+      const disintegrate = (0.32 * coord);
+      const finalScore = Math.max(0, Math.min(100, Math.round(integrate - disintegrate + 22)));
 
-      bTx.style.width = `${tx}%`;
-      bSpec.style.width = `${spec}%`;
-      bCoord.style.width = `${coord}%`;
-      scoreEl.textContent = `${score}%`;
+      barTx.style.width = `${tx}%`;
+      barSpec.style.width = `${spec}%`;
+      barCoord.style.width = `${coord}%`;
 
-      if (score >= 70) {
-        pillEl.textContent = 'Integración recomendada: Alta';
-        pillEl.style.borderColor = 'rgba(52,211,153,.75)';
-        pillEl.style.color = '#b9f4df';
-        messageEl.textContent = 'Conviene internalizar etapas críticas para proteger inversiones específicas y reducir riesgo contractual.';
-        govEl.textContent = 'Gobernanza sugerida: propiedad directa en eslabones críticos + incentivos por desempeño operativo.';
-      } else if (score >= 45) {
-        pillEl.textContent = 'Integración recomendada: Media';
-        pillEl.style.borderColor = 'rgba(251,191,36,.8)';
-        pillEl.style.color = '#ffe8ad';
-        messageEl.textContent = 'Estrategia híbrida: integración selectiva y contratos de largo plazo con proveedores clave.';
-        govEl.textContent = 'Gobernanza sugerida: alianzas estratégicas, cláusulas de calidad y mecanismos de resolución de disputas.';
+      score.textContent = `${finalScore}%`;
+      animateScore();
+
+      if (finalScore >= 70) {
+        tag.textContent = 'Integración recomendada: Alta';
+        tag.style.borderColor = 'rgba(52,211,153,.75)';
+        tag.style.color = '#b7f6df';
+        msg.textContent = 'Internaliza etapas críticas para proteger activos específicos y controlar calidad/tiempos.';
+        gov.textContent = 'Gobernanza sugerida: propiedad en nodos clave + incentivos por productividad y servicio.';
+        popConfetti();
+      } else if (finalScore >= 45) {
+        tag.textContent = 'Integración recomendada: Media (híbrida)';
+        tag.style.borderColor = 'rgba(251,191,36,.8)';
+        tag.style.color = '#ffe9af';
+        msg.textContent = 'Combina integración selectiva con contratos robustos de largo plazo.';
+        gov.textContent = 'Gobernanza sugerida: SLAs estrictos, cláusulas de contingencia y auditoría por desempeño.';
       } else {
-        pillEl.textContent = 'Integración recomendada: Baja';
-        pillEl.style.borderColor = 'rgba(251,113,133,.8)';
-        pillEl.style.color = '#ffd0d8';
-        messageEl.textContent = 'El mercado puede coordinar eficientemente; prioriza flexibilidad y especialización de proveedores.';
-        govEl.textContent = 'Gobernanza sugerida: contratos estandarizados, múltiples proveedores y auditoría de cumplimiento.';
+        tag.textContent = 'Integración recomendada: Baja';
+        tag.style.borderColor = 'rgba(251,113,133,.8)';
+        tag.style.color = '#ffd0d8';
+        msg.textContent = 'Prioriza mercado y flexibilidad; integra solo procesos estratégicos mínimos.';
+        gov.textContent = 'Gobernanza sugerida: multi-sourcing, contratos estándar y métricas de cumplimiento.';
       }
     }
   </script>
